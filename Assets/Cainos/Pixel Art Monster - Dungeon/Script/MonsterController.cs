@@ -28,7 +28,7 @@ namespace Cainos.PixelArtMonster_Dungeon
         public float jumpGravityMutiplier = 0.6f;                   // gravity multiplier when character is jumping, should be within [0.0,1.0], set it to lower value so that the longer you press the jump button, the higher the character can jump    
         public float fallGravityMutiplier = 1.3f;                   // gravity multiplier when character is falling, should be equal or greater than 1.0
 
-        public Vector2 groundCheckSize = new Vector2(0.1f,0.1f);    // size of the box at the character's bottom to determine whether the character is on ground
+        public Vector2 groundCheckSize = new Vector2(0.1f, 0.1f);    // size of the box at the character's bottom to determine whether the character is on ground
         public float movingBlendTransitionSpeed = 2.0f;             // the transition speed of moving blend value
         public bool canAttackInAir = true;                          // can the character attack while in air?
         public bool canAttackWhenMoving = true;                     // can the character attack when moving? When turned off, it also forbit the character to move while in attack animation
@@ -49,7 +49,7 @@ namespace Cainos.PixelArtMonster_Dungeon
                 isDead = value;
                 pm.IsDead = isDead;
             }
-        }                    
+        }
         private bool isDead;
 
         private PixelMonster pm;                                    // the PixelMonster script attached the character
@@ -94,27 +94,27 @@ namespace Cainos.PixelArtMonster_Dungeon
 
             //perform move and attack
             Move(inputMove.x, shouldRun, inputJump);
-            Attack( inputAttack );
+            Attack(inputAttack);
 
             //CHECK IF THE CHARACTER IS ON GROUND
             isGrounded = false;
             for (int i = 0; i < groundCheckResult.Length; i++) groundCheckResult[i] = null;
             Physics2D.OverlapBox(transform.position, groundCheckSize, 0, contactFilter2D, groundCheckResult);
-            foreach ( var c in groundCheckResult)
+            foreach (var c in groundCheckResult)
             {
                 if (c && c.gameObject != gameObject) isGrounded = true;
             }
 
             //jump cooldown
-            if ( isGrounded )
+            if (isGrounded)
             {
                 if (jumpCdTimer < jumpCooldown) jumpCdTimer += Time.deltaTime;
             }
         }
 
-        public void Attack( bool inputAttack)
+        public void Attack(bool inputAttack)
         {
-            if ( isInJumpPrepare ) return;
+            if (isInJumpPrepare) return;
             if (!canAttackInAir && !isGrounded) return;
             if (!canAttackWhenMoving && isMoving) return;
 
@@ -127,9 +127,9 @@ namespace Cainos.PixelArtMonster_Dungeon
 
         public void Move(float inputH, bool inputRunning, bool inputJump)
         {
-            if ( isDead ) inputH = 0.0f;
+            if (isDead) inputH = 0.0f;
             if (!canAttackWhenMoving && pm.IsAttacking) inputH = 0.0f;
-            if ( isInJumpPrepare ) inputH = 0.0f;
+            if (isInJumpPrepare) inputH = 0.0f;
 
             //get current velocity from rigidbody
             curVel = rb2d.velocity;
@@ -190,13 +190,13 @@ namespace Cainos.PixelArtMonster_Dungeon
 
             //jump
             //jumpCdTimer >= 0.05f to prevent errors when the jumpCooldown is too small
-            if (isGrounded && inputJump && jumpCdTimer >= jumpCooldown && jumpCdTimer >=0.05f)
+            if (isGrounded && inputJump && jumpCdTimer >= jumpCooldown && jumpCdTimer >= 0.05f)
             {
                 isInJumpPrepare = true;
                 pm.IsInJumpPrepare = true;
 
                 jumpDelayTimer += Time.deltaTime;
-                if ( jumpDelayTimer > jumpDelay)
+                if (jumpDelayTimer > jumpDelay)
                 {
                     jumpDelayTimer = 0.0f;
                     isGrounded = false;
@@ -211,13 +211,13 @@ namespace Cainos.PixelArtMonster_Dungeon
                 pm.IsInJumpPrepare = false;
             }
 
-            if ( inputJump && curVel.y > 0)
+            if (inputJump && curVel.y > 0)
             {
-                curVel.y += Physics.gravity.y * (jumpGravityMutiplier -1.0f) * Time.deltaTime;
+                curVel.y += Physics.gravity.y * (jumpGravityMutiplier - 1.0f) * Time.deltaTime;
             }
             else if (curVel.y > 0)
             {
-                curVel.y += Physics.gravity.y * ( fallGravityMutiplier - 1.0f) * Time.deltaTime;
+                curVel.y += Physics.gravity.y * (fallGravityMutiplier - 1.0f) * Time.deltaTime;
             }
 
             //set modified velocity back to rigidbody
@@ -244,6 +244,3 @@ namespace Cainos.PixelArtMonster_Dungeon
 
     }
 }
-
-
-
