@@ -8,16 +8,22 @@ public class FondoMovimiento : MonoBehaviour
     private Vector2 offset;
     private Material material;
     private Rigidbody2D player;
+    private HeroKnight heroKnight;
 
     private void Awake()
     {
         material = GetComponent<SpriteRenderer>().material;
         player = GameObject.FindGameObjectWithTag("Player").GetComponent<Rigidbody2D>();
+        heroKnight = player.GetComponent<HeroKnight>();
     }
 
     private void Update()
     {
-        offset = (player.velocity.x * 0.1f) * velocidadMovimeinto * Time.deltaTime;
-        material.mainTextureOffset += offset;
+        // Solo mover el fondo si el jugador no está escalando (m_isWallSliding == false)
+        if (!heroKnight.IsWallSliding)
+        {
+            offset = (player.velocity.x * 0.1f) * velocidadMovimeinto * Time.deltaTime;
+            material.mainTextureOffset += offset;
+        }
     }
 }
