@@ -20,7 +20,8 @@ public class HeroKnight : MonoBehaviour
     private Sensor_HeroKnight m_groundSensor;
     private Sensor_HeroKnight m_wallSensorR1, m_wallSensorR2, m_wallSensorL1, m_wallSensorL2;
     private VidaJugador vidaJugador;
-    private bool m_isWallSliding = false, m_grounded = false, m_rolling = false, isBlocking = false, isDead = false, facingRight = true, invulnerable = false;
+    private bool m_isWallSliding = false, m_grounded = false, m_rolling = false, isBlocking = false, isDead = false, facingRight = true, invulnerable = false, canWallJump = true;
+    public bool IsWallSliding => m_isWallSliding;
     private float m_timeSinceAttack = 0.0f, m_delayToIdle = 0.0f, m_rollCurrentTime = 0.0f;
     private int m_currentAttack = 0;
     private readonly float m_rollDuration = 8.0f / 14.0f;
@@ -58,6 +59,7 @@ public class HeroKnight : MonoBehaviour
         {
             m_grounded = true;
             m_animator.SetBool("Grounded", m_grounded);
+            canWallJump = true;
         }
         else if (m_grounded && !m_groundSensor.State())
         {
@@ -91,11 +93,13 @@ public class HeroKnight : MonoBehaviour
 
         m_animator.SetFloat("AirSpeedY", m_body2d.velocity.y);
 
-        if (m_isWallSliding && Input.GetKeyDown("space"))
+        if (m_isWallSliding && Input.GetKeyDown("space") && canWallJump)
         {
             m_body2d.velocity = new Vector2(-m_facingDirection() * m_jumpForce, m_jumpForce);
             m_isWallSliding = false;
             m_animator.SetTrigger("Jump");
+            canWallJump = false;
+            StartCoroutine(JumpCooldown());
         }
         else if (Input.GetKeyDown("space") && m_grounded && !m_rolling)
         {
@@ -160,7 +164,19 @@ public class HeroKnight : MonoBehaviour
         Collider2D[] objetos = Physics2D.OverlapCircleAll(controladorGolpe.position, radioGolpe);
         foreach (Collider2D colisionador in objetos)
             if (colisionador.CompareTag("Enemigo"))
-                colisionador.GetComponent<Enemigo>().TomarDaño(dañoGolpe);
+            {
+                Enemigo enemigo = colisionador.GetComponent<Enemigo>();
+                EnemigoCainos enemigoCainos = colisionador.GetComponent<EnemigoCainos>();
+
+                if (enemigo != null)
+                {
+                    enemigo.TomarDaño(dañoGolpe);
+                }
+                else if (enemigoCainos != null)
+                {
+                    enemigoCainos.TomarDaño(dañoGolpe);
+                }
+            }
     }
 
     private void Flip()
@@ -192,6 +208,13 @@ public class HeroKnight : MonoBehaviour
             m_animator.SetTrigger("Hurt");
             StartCoroutine(ParpadearYHacerInvulnerable());
         }
+    }
+
+    private IEnumerator JumpCooldown()
+    {
+        canWallJump = false;
+        yield return new WaitForSeconds(0.75f);
+        canWallJump = true;
     }
 
     private IEnumerator ParpadearYHacerInvulnerable()
