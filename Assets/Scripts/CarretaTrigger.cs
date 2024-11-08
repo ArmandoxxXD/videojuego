@@ -8,8 +8,8 @@ public class CarretaTrigger : MonoBehaviour
         // Comprueba si el jugador ha tocado la carreta
         if (other.CompareTag("Player"))
         {
-            // Cambia a la escena "MenuInicial"
-            SceneManager.LoadScene("MenuInicial");
+            // Cambia a la escena "Name_Escena"
+            SceneManager.LoadScene("Nivell3");
         }
     }
 }
