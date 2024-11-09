@@ -1,72 +1,63 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
-public class Ghost : MonoBehaviour
+public class MuerteBlanca : MonoBehaviour
 {
-    public float detectRange = 10.0f; // Rango de detección del jugador
-    public float attackRange = 5.0f;  // Rango de ataque del rayo
-    public int damage = 20;           // Daño del rayo
-    public LineRenderer rayLine;      // LineRenderer para el rayo
-
-    private Transform player;         // Referencia al jugador
+    [SerializeField] private float vida;
+    private Animator animator;
+    private SpriteRenderer spr;
+    private bool isDead = false;
 
     void Start()
     {
-        // Encuentra al jugador usando la etiqueta "Player"
-        player = GameObject.FindGameObjectWithTag("Player").transform;
-
-        // Asegúrate de que el LineRenderer esté desactivado al inicio
-        rayLine.enabled = false;
+        animator = GetComponent<Animator>();
+        spr = GetComponent<SpriteRenderer>();
     }
 
-    void Update()
+    public void TomarDaño(int daño)
     {
-        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+        if (isDead) return;
 
-        if (distanceToPlayer <= detectRange)
-        {
-            // Si el jugador está dentro del rango de detección, mirar hacia él
-            LookAtPlayer();
+        vida -= daño;
+        RecibirGolpe();
 
-            if (distanceToPlayer <= attackRange)
-            {
-                AttackWithRay();
-            }
-            else
-            {
-                // Si está fuera del rango de ataque, desactiva el rayo
-                rayLine.enabled = false;
-            }
-        }
-        else
+        if (vida <= 0)
         {
-            // Desactiva el rayo si el jugador está fuera del rango de detección
-            rayLine.enabled = false;
+            Muerte();
         }
     }
 
-    void LookAtPlayer()
+
+    private void Muerte()
     {
-        // Hace que el fantasma mire hacia el jugador
-        Vector3 direction = (player.position - transform.position).normalized;
-        transform.LookAt(new Vector3(player.position.x, transform.position.y, player.position.z));
+        isDead = true;
+        animator.SetBool("isDead", true);
+        StartCoroutine(DestruirDespuesDeAnimacion());
     }
 
-    void AttackWithRay()
+    private IEnumerator DestruirDespuesDeAnimacion()
     {
-        // Activa el LineRenderer y ajusta el rayo
-        rayLine.enabled = true;
-        rayLine.SetPosition(0, transform.position);
-        rayLine.SetPosition(1, player.position);
+        float duracionDeMuerte = animator.GetCurrentAnimatorStateInfo(0).length;
+        yield return new WaitForSeconds(duracionDeMuerte);
 
-        // Verifica si el rayo golpea al jugador
-        RaycastHit hit;
-        if (Physics.Raycast(transform.position, (player.position - transform.position).normalized, out hit, attackRange))
+        Destroy(gameObject);
+    }
+
+    public void RecibirGolpe()
+    {
+        if (!isDead)
         {
-            if (hit.collider.CompareTag("Player"))
-            {
-                // Aquí puedes implementar el daño al jugador
-                Debug.Log("El fantasma ataca con un rayo y causa " + damage + " de daño");
-            }
+            StartCoroutine(CambiarColorTemporalmente());
         }
     }
+
+    private IEnumerator CambiarColorTemporalmente()
+    {
+        spr.color = Color.red;
+        yield return new WaitForSeconds(0.1f); // Mantener el color rojo por un breve momento
+        spr.color = Color.white; // Regresar al color original
+    }
+
+
 }

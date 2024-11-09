@@ -1,45 +1,63 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
-public class Villain : MonoBehaviour
+public class EnemyOgro : MonoBehaviour
 {
-    // Variables para definir el comportamiento
-    public float speed = 3.0f; // Velocidad del villano
-    public float attackRange = 1.5f; // Rango de ataque
-    public int damage = 10; // Daño que hace al atacar
-
-    private Transform player; // Referencia al jugador
+    [SerializeField] private float vida;
+    private Animator animator;
+    private SpriteRenderer spr;
+    private bool isDead = false;
 
     void Start()
     {
-        // Encuentra al jugador usando la etiqueta "Player"
-        player = GameObject.FindGameObjectWithTag("Player").transform;
+        animator = GetComponent<Animator>();
+        spr = GetComponent<SpriteRenderer>();
     }
 
-    void Update()
+    public void TomarDaño(int daño)
     {
-        // Si el jugador está dentro del rango de ataque, ataca
-        float distance = Vector3.Distance(transform.position, player.position);
+        if (isDead) return;
 
-        if (distance <= attackRange)
+        vida -= daño;
+        RecibirGolpe();
+
+        if (vida <= 0)
         {
-            Attack();
-        }
-        else
-        {
-            MoveTowardsPlayer();
+            Muerte();
         }
     }
 
-    void MoveTowardsPlayer()
+
+    private void Muerte()
     {
-        // Mueve al villano hacia el jugador
-        Vector3 direction = (player.position - transform.position).normalized;
-        transform.position += direction * speed * Time.deltaTime;
+        isDead = true;
+        animator.SetBool("isDead", true);
+        StartCoroutine(DestruirDespuesDeAnimacion());
     }
 
-    void Attack()
+    private IEnumerator DestruirDespuesDeAnimacion()
     {
-        // Aquí podrías implementar el ataque
-        Debug.Log("El villano está atacando y causa " + damage + " de daño");
+        float duracionDeMuerte = animator.GetCurrentAnimatorStateInfo(0).length;
+        yield return new WaitForSeconds(duracionDeMuerte);
+
+        Destroy(gameObject);
     }
+
+    public void RecibirGolpe()
+    {
+        if (!isDead)
+        {
+            StartCoroutine(CambiarColorTemporalmente());
+        }
+    }
+
+    private IEnumerator CambiarColorTemporalmente()
+    {
+        spr.color = Color.red;
+        yield return new WaitForSeconds(0.1f); // Mantener el color rojo por un breve momento
+        spr.color = Color.white; // Regresar al color original
+    }
+
+
 }
