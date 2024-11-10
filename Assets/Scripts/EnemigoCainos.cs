@@ -9,12 +9,14 @@ public class EnemigoCainos : MonoBehaviour
     private bool isDead = false;
     private MonsterFlyingController flyingController;
     private PixelMonster pixelMonster;
+    private BoxCollider2D collider;
 
     void Start()
     {
         skinnedMeshRenderer = GetComponentInChildren<SkinnedMeshRenderer>();
         flyingController = GetComponent<MonsterFlyingController>();
         pixelMonster = GetComponent<PixelMonster>();
+        collider = GetComponent<BoxCollider2D>();
     }
 
     public void TomarDaño(int daño)
@@ -35,6 +37,10 @@ public class EnemigoCainos : MonoBehaviour
         isDead = true;
         flyingController.IsDead = true;  // Desactivar el movimiento y cambiar el estado a "muerto"
         pixelMonster.IsDead = true;      // Activar la animación de muerte en PixelMonster
+        if (collider != null)
+        {
+            collider.enabled = false;  // Desactivar el collider para evitar colisiones
+        }
         StartCoroutine(DestruirDespuesDeAnimacion());
     }
 
