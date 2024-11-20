@@ -104,7 +104,7 @@ public class TutorialManager : MonoBehaviour
 
     void Update()
     {
-        if (!tutorialPanel.activeInHierarchy) return;
+      
 
         switch (step)
         {
