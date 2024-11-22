@@ -2,19 +2,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class OgreController : MonoBehaviour
+public class GhostController : MonoBehaviour
 {
     public Transform player;
     [SerializeField] private float detectionRadius = 5.0f;
     [SerializeField] private float attackRadius = 1.5f;
-    [SerializeField] private float speed = 2.0f;
-    [SerializeField] private int maxAttacks = 3; // Número máximo de ataques antes de morir
+    [SerializeField] private float speed = 1.5f;
+    [SerializeField] private int maxAttacks = 3;
     [SerializeField] private int dañoAtaque = 1;
     [SerializeField] private Transform controladorAtaque;
 
     private Rigidbody2D rb;
     private Animator animator;
-    private int attackCount = 0; // Contador de ataques
+    private int attackCount = 0;
     private bool isAttacking = false;
     private bool isDead = false;
 
@@ -98,7 +98,7 @@ public class OgreController : MonoBehaviour
         isDead = true;
         animator.SetTrigger("Die");
         rb.velocity = Vector2.zero;
-        Destroy(gameObject, 1.5f); // Destruye el ogro después de 1.5 segundos para permitir la animación de muerte
+        Destroy(gameObject, 1.5f); // Destruye el fantasma después de 1.5 segundos para permitir la animación de desaparición
     }
 
     void OnDrawGizmosSelected()
