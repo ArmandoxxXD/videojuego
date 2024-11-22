@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Cinemachine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -14,7 +15,11 @@ public class TutorialManager : MonoBehaviour
     public Image shiftKeyImage;
     public Image spaceKeyImage;
 
+    public CinemachineVirtualCamera cinematicCamera; // Cámara virtual para la cinemática
+    public CinemachineVirtualCamera playerCamera; // Cámara virtual del jugador
+
     private int step = 0;
+    public bool tutorialCompleted = false;
 
     // Diccionarios para rastrear el estado de teclas y clics
     private Dictionary<KeyCode, bool> moveKeysPressed = new Dictionary<KeyCode, bool> {
@@ -50,7 +55,7 @@ public class TutorialManager : MonoBehaviour
                 spaceKeyImage.gameObject.SetActive(true);
                 break;
             case 2:
-                tutorialText.text = "Presiona SHIFT para hacer un dash";
+                tutorialText.text = "Presiona SHIFT para hacer un dash.\nPodrás pasar por lugares estrechos.";
                 ResetUI();
                 shiftKeyImage.gameObject.SetActive(true);
                 break;
@@ -60,22 +65,46 @@ public class TutorialManager : MonoBehaviour
                 mouseKeysPanel.SetActive(true);
                 break;
             case 4:
-                tutorialText.text = "¡Buen trabajo! Has completado el tutorial.";
+                StartCoroutine(PlayCinematicAndProceed());
+                break;
+            case 5:
+                tutorialText.text = "¡Buen trabajo! Has completado el tutorial.\nVe hacia la bandera para continuar.";
                 ResetUI();
-                StartCoroutine(HideTutorialPanelAfterDelay(3f));
+                StartCoroutine(CompleteTutorial());
                 break;
         }
     }
 
-    IEnumerator HideTutorialPanelAfterDelay(float delay)
+    IEnumerator PlayCinematicAndProceed()
     {
-        yield return new WaitForSeconds(delay);
+        tutorialPanel.SetActive(false); // Ocultar el panel temporalmente
+        yield return new WaitForSeconds(1f); // Pequeña pausa antes de la cinemática
+
+        // Activar la cinemática
+        if (cinematicCamera != null)
+        {
+            cinematicCamera.Priority = 10; // Aumentar prioridad para hacerla activa
+            playerCamera.Priority = 5;    // Reducir la prioridad de la cámara del jugador
+            yield return new WaitForSeconds(3f); // Duración de la cinemática
+            cinematicCamera.Priority = 5; // Restaurar prioridad original
+            playerCamera.Priority = 10;   // Reactivar la cámara del jugador
+        }
+
+        tutorialPanel.SetActive(true); // Mostrar el panel nuevamente
+        step++; // Avanzar al siguiente paso
+        ShowNextStep(); // Mostrar el texto del siguiente paso
+    }
+
+    IEnumerator CompleteTutorial()
+    {
+        yield return new WaitForSeconds(3f);
         tutorialPanel.SetActive(false);
+        tutorialCompleted = true;
     }
 
     void Update()
     {
-        if (!tutorialPanel.activeInHierarchy) return;
+      
 
         switch (step)
         {
@@ -108,7 +137,6 @@ public class TutorialManager : MonoBehaviour
         }
     }
 
-    // Función para verificar si ambas teclas en la lista fueron presionadas
     private void CheckKeysPressed(List<KeyCode> keys, Dictionary<KeyCode, bool> keyStatus, System.Action onComplete)
     {
         foreach (var key in keys)
@@ -124,7 +152,6 @@ public class TutorialManager : MonoBehaviour
         }
     }
 
-    // Función para verificar si ambos clics fueron presionados
     private void CheckMouseClicks(List<int> buttons, Dictionary<int, bool> clickStatus, System.Action onComplete)
     {
         foreach (var button in buttons)
@@ -140,7 +167,6 @@ public class TutorialManager : MonoBehaviour
         }
     }
 
-    // Función para restablecer el estado de teclas o clics
     private void ResetKeyPresses<T>(Dictionary<T, bool> statusDictionary)
     {
         var keys = new List<T>(statusDictionary.Keys);
@@ -150,7 +176,6 @@ public class TutorialManager : MonoBehaviour
         }
     }
 
-    // Función para restablecer el estado de la interfaz de usuario
     private void ResetUI()
     {
         adKeysPanel.SetActive(false);
