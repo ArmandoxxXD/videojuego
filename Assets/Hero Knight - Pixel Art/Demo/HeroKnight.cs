@@ -14,13 +14,18 @@ public class HeroKnight : MonoBehaviour
     [SerializeField] private float fuerzaEmpuje = 10.0f;
     [SerializeField] private float tiempoParpadeo = 1.5f;
 
+    private Vector2 colliderOriginalSize;
+    private Vector2 colliderOriginalOffset; 
+
     private Animator m_animator;
     private Rigidbody2D m_body2d;
     private SpriteRenderer m_spriteRenderer;
     private Sensor_HeroKnight m_groundSensor;
     private Sensor_HeroKnight m_wallSensorR1, m_wallSensorR2, m_wallSensorL1, m_wallSensorL2;
     private VidaJugador vidaJugador;
-    private bool m_isWallSliding = false, m_grounded = false, m_rolling = false, isBlocking = false, isDead = false, facingRight = true, invulnerable = false;
+    private BoxCollider2D playerCollider;
+    private bool m_isWallSliding = false, m_grounded = false, m_rolling = false, isBlocking = false, isDead = false, facingRight = true, invulnerable = false, canWallJump = true;
+    public bool IsWallSliding => m_isWallSliding;
     private float m_timeSinceAttack = 0.0f, m_delayToIdle = 0.0f, m_rollCurrentTime = 0.0f;
     private int m_currentAttack = 0;
     private readonly float m_rollDuration = 8.0f / 14.0f;
@@ -30,6 +35,7 @@ public class HeroKnight : MonoBehaviour
         m_animator = GetComponent<Animator>();
         m_body2d = GetComponent<Rigidbody2D>();
         m_spriteRenderer = GetComponent<SpriteRenderer>();
+        playerCollider = GetComponent<BoxCollider2D>();
         vidaJugador = GetComponent<VidaJugador>();
         m_groundSensor = transform.Find("GroundSensor").GetComponent<Sensor_HeroKnight>();
         m_wallSensorR1 = transform.Find("WallSensor_R1").GetComponent<Sensor_HeroKnight>();
@@ -37,6 +43,9 @@ public class HeroKnight : MonoBehaviour
         m_wallSensorL1 = transform.Find("WallSensor_L1").GetComponent<Sensor_HeroKnight>();
         m_wallSensorL2 = transform.Find("WallSensor_L2").GetComponent<Sensor_HeroKnight>();
         m_body2d.interpolation = RigidbodyInterpolation2D.Interpolate;
+
+        colliderOriginalSize = playerCollider.size;
+        colliderOriginalOffset = playerCollider.offset;
     }
 
     void Update()
@@ -58,6 +67,7 @@ public class HeroKnight : MonoBehaviour
         {
             m_grounded = true;
             m_animator.SetBool("Grounded", m_grounded);
+            canWallJump = true;
         }
         else if (m_grounded && !m_groundSensor.State())
         {
@@ -91,11 +101,13 @@ public class HeroKnight : MonoBehaviour
 
         m_animator.SetFloat("AirSpeedY", m_body2d.velocity.y);
 
-        if (m_isWallSliding && Input.GetKeyDown("space"))
+        if (m_isWallSliding && Input.GetKeyDown("space") && canWallJump)
         {
             m_body2d.velocity = new Vector2(-m_facingDirection() * m_jumpForce, m_jumpForce);
             m_isWallSliding = false;
             m_animator.SetTrigger("Jump");
+            canWallJump = false;
+            StartCoroutine(JumpCooldown());
         }
         else if (Input.GetKeyDown("space") && m_grounded && !m_rolling)
         {
@@ -144,9 +156,31 @@ public class HeroKnight : MonoBehaviour
 
     private void Roll()
     {
-        m_rolling = true;
-        m_animator.SetTrigger("Roll");
-        m_body2d.velocity = new Vector2(m_facingDirection() * m_rollForce, m_body2d.velocity.y);
+        if (!m_rolling) // Solo realizar el dash si no está en curso
+        {
+            m_rolling = true;
+
+            // Reducir el tamaño del collider dinámicamente (dividir por 2)
+            playerCollider.size = new Vector2(colliderOriginalSize.x, colliderOriginalSize.y / 2.0f);
+            playerCollider.offset = new Vector2(colliderOriginalOffset.x, colliderOriginalOffset.y / 2.0f);
+
+            m_animator.SetTrigger("Roll");
+            m_body2d.velocity = new Vector2(m_facingDirection() * m_rollForce, m_body2d.velocity.y);
+
+            // Restaurar el tamaño después de un tiempo
+            StartCoroutine(RestoreColliderAfterDash());
+        }
+    }
+
+    private IEnumerator RestoreColliderAfterDash()
+    {
+        yield return new WaitForSeconds(m_rollDuration); // Esperar la duración del dash
+
+        // Restaurar el tamaño original del collider
+        playerCollider.size = colliderOriginalSize;
+        playerCollider.offset = colliderOriginalOffset;
+
+        m_rolling = false; // Finalizar el dash
     }
 
     private void TriggerAnimation(string trigger, string boolName = null, bool boolValue = false)
@@ -160,7 +194,19 @@ public class HeroKnight : MonoBehaviour
         Collider2D[] objetos = Physics2D.OverlapCircleAll(controladorGolpe.position, radioGolpe);
         foreach (Collider2D colisionador in objetos)
             if (colisionador.CompareTag("Enemigo"))
-                colisionador.GetComponent<Enemigo>().TomarDaño(dañoGolpe);
+            {
+                Enemigo enemigo = colisionador.GetComponent<Enemigo>();
+                EnemigoCainos enemigoCainos = colisionador.GetComponent<EnemigoCainos>();
+
+                if (enemigo != null)
+                {
+                    enemigo.TomarDaño(dañoGolpe);
+                }
+                else if (enemigoCainos != null)
+                {
+                    enemigoCainos.TomarDaño(dañoGolpe);
+                }
+            }
     }
 
     private void Flip()
@@ -192,6 +238,13 @@ public class HeroKnight : MonoBehaviour
             m_animator.SetTrigger("Hurt");
             StartCoroutine(ParpadearYHacerInvulnerable());
         }
+    }
+
+    private IEnumerator JumpCooldown()
+    {
+        canWallJump = false;
+        yield return new WaitForSeconds(0.75f);
+        canWallJump = true;
     }
 
     private IEnumerator ParpadearYHacerInvulnerable()
