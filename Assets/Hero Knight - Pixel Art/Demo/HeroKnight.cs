@@ -55,7 +55,7 @@ public class HeroKnight : MonoBehaviour
             m_timeSinceAttack += Time.deltaTime;
             if (m_rolling) m_rollCurrentTime += Time.deltaTime;
             if (m_rollCurrentTime > m_rollDuration) m_rolling = false;
-
+           
             HandleGroundAndWallSensors();
             HandleInput();
          }

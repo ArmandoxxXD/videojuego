@@ -4,17 +4,28 @@ using UnityEngine;
 
 public class Joyas : MonoBehaviour
 {
-
     [SerializeField] private GameObject efecto;
     [SerializeField] private int cantidadPuntos;
-    [SerializeField] private Puntaje puntaje;
 
-   private void OnTriggerEnter2D(Collider2D other)
+    private Puntaje puntaje;
+
+    private void Start()
     {
-        if (other.CompareTag("Player"))
+        // Buscar el componente Puntaje automáticamente en el Canvas persistente
+        puntaje = FindObjectOfType<Puntaje>();
+
+        if (puntaje == null)
+        {
+            Debug.LogError("No se encontró el componente Puntaje en la escena.");
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("Player") && puntaje != null)
         {
             puntaje.SumarDiamantes(cantidadPuntos);
-            Instantiate(efecto,transform.position,Quaternion.identity);
+            Instantiate(efecto, transform.position, Quaternion.identity);
             Destroy(gameObject);
         }
     }

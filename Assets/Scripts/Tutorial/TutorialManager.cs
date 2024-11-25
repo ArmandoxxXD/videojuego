@@ -2,67 +2,133 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Cinemachine;
+using UnityEngine.Playables; // Para manejar la animación
 using System.Collections;
 using System.Collections.Generic;
 
 public class TutorialManager : MonoBehaviour
 {
-    public GameObject tutorialPanel;
-    public TextMeshProUGUI tutorialText;
+    // Referencias dinámicas al Canvas y sus elementos
+    private GameObject tutorialPanel;
+    private TextMeshProUGUI tutorialText;
+    private GameObject adKeysPanel;
+    private GameObject mouseKeysPanel;
+    private Image shiftKeyImage;
+    private Image spaceKeyImage;
 
-    public GameObject adKeysPanel;
-    public GameObject mouseKeysPanel;
-    public Image shiftKeyImage;
-    public Image spaceKeyImage;
-
-    public CinemachineVirtualCamera cinematicCamera; // Cámara virtual para la cinemática
-    public CinemachineVirtualCamera playerCamera; // Cámara virtual del jugador
+    public CinemachineVirtualCamera cinematicCamera;
+    public CinemachineVirtualCamera playerCamera;
+    public PlayableDirector entradaDirector;
 
     private int step = 0;
     public bool tutorialCompleted = false;
 
+    private bool canvasInitialized = false;
+
     // Diccionarios para rastrear el estado de teclas y clics
-    private Dictionary<KeyCode, bool> moveKeysPressed = new Dictionary<KeyCode, bool> {
+    private Dictionary<KeyCode, bool> moveKeysPressed = new Dictionary<KeyCode, bool>
+    {
         { KeyCode.A, false },
         { KeyCode.D, false },
         { KeyCode.LeftArrow, false },
         { KeyCode.RightArrow, false }
     };
 
-    private Dictionary<int, bool> mouseClicksPressed = new Dictionary<int, bool> {
+    private Dictionary<int, bool> mouseClicksPressed = new Dictionary<int, bool>
+    {
         { 0, false },  // Clic izquierdo
         { 1, false }   // Clic derecho
     };
 
-    public void StartTutorial()
+    private void Start()
     {
+        // Asegurarse de que el Canvas esté inicializado
+        GameObject canvasInstance = FindObjectOfType<PersistCanvas>()?.gameObject;
+
+        if (canvasInstance != null)
+        {
+            InitializeCanvasReferences(canvasInstance);
+        }
+        else
+        {
+            Debug.LogError("Canvas no encontrado. Asegúrate de que el Canvas esté cargado.");
+        }
+
+        if (IsInTutorialScene())
+        {
+            ResetTutorialState();
+
+            // Iniciar el tutorial tras la animación de entrada
+            if (entradaDirector != null)
+            {
+                entradaDirector.stopped += OnCinematicFinished; // Suscribir evento
+            }
+            else
+            {
+                StartTutorial(); // Iniciar directamente si no hay animación
+            }
+        }
+        else
+        {
+            DisableTutorialPanel();
+        }
+    }
+
+    public void InitializeCanvasReferences(GameObject canvas)
+    {
+        tutorialPanel = canvas.transform.Find("tutorialPanel")?.gameObject;
+        tutorialText = canvas.transform.Find("tutorialPanel/tutorialText")?.GetComponent<TextMeshProUGUI>();
+        adKeysPanel = canvas.transform.Find("tutorialPanel/adKeysPanel")?.gameObject;
+        mouseKeysPanel = canvas.transform.Find("tutorialPanel/mouseKeysPanel")?.gameObject;
+        shiftKeyImage = canvas.transform.Find("tutorialPanel/shiftKeyImage")?.GetComponent<Image>();
+        spaceKeyImage = canvas.transform.Find("tutorialPanel/spaceKeyImage")?.GetComponent<Image>();
+
+        if (tutorialPanel == null || tutorialText == null)
+        {
+            Debug.LogError("No se pudo inicializar el TutorialManager porque faltan referencias en el Canvas.");
+            return;
+        }
+
+        canvasInitialized = true;
+    }
+
+    private void StartTutorial()
+    {
+        if (!canvasInitialized)
+        {
+            Debug.LogWarning("El Canvas aún no está inicializado para el TutorialManager.");
+            return;
+        }
+
         tutorialPanel.SetActive(true);
         ShowNextStep();
     }
 
-    void ShowNextStep()
+    private void ShowNextStep()
     {
+        if (!canvasInitialized) return;
+
         switch (step)
         {
             case 0:
                 tutorialText.text = "Usa las teclas AD o las flechas para moverte";
                 ResetUI();
-                adKeysPanel.SetActive(true);
+                adKeysPanel?.SetActive(true);
                 break;
             case 1:
                 tutorialText.text = "Presiona SPACE para saltar";
                 ResetUI();
-                spaceKeyImage.gameObject.SetActive(true);
+                spaceKeyImage?.gameObject.SetActive(true);
                 break;
             case 2:
                 tutorialText.text = "Presiona SHIFT para hacer un dash.\nPodrás pasar por lugares estrechos.";
                 ResetUI();
-                shiftKeyImage.gameObject.SetActive(true);
+                shiftKeyImage?.gameObject.SetActive(true);
                 break;
             case 3:
                 tutorialText.text = "Presiona clic izquierdo para atacar y clic derecho para bloquear";
                 ResetUI();
-                mouseKeysPanel.SetActive(true);
+                mouseKeysPanel?.SetActive(true);
                 break;
             case 4:
                 StartCoroutine(PlayCinematicAndProceed());
@@ -75,112 +141,146 @@ public class TutorialManager : MonoBehaviour
         }
     }
 
-    IEnumerator PlayCinematicAndProceed()
+    private IEnumerator PlayCinematicAndProceed()
     {
-        tutorialPanel.SetActive(false); // Ocultar el panel temporalmente
-        yield return new WaitForSeconds(1f); // Pequeña pausa antes de la cinemática
+        tutorialPanel.SetActive(false);
+        yield return new WaitForSeconds(1f);
 
-        // Activar la cinemática
         if (cinematicCamera != null)
         {
-            cinematicCamera.Priority = 10; // Aumentar prioridad para hacerla activa
-            playerCamera.Priority = 5;    // Reducir la prioridad de la cámara del jugador
-            yield return new WaitForSeconds(3f); // Duración de la cinemática
-            cinematicCamera.Priority = 5; // Restaurar prioridad original
-            playerCamera.Priority = 10;   // Reactivar la cámara del jugador
+            cinematicCamera.Priority = 10;
+            playerCamera.Priority = 5;
+            yield return new WaitForSeconds(3f);
+            cinematicCamera.Priority = 5;
+            playerCamera.Priority = 10;
         }
 
-        tutorialPanel.SetActive(true); // Mostrar el panel nuevamente
-        step++; // Avanzar al siguiente paso
-        ShowNextStep(); // Mostrar el texto del siguiente paso
+        tutorialPanel.SetActive(true);
+        step++;
+        ShowNextStep();
     }
 
-    IEnumerator CompleteTutorial()
+    private IEnumerator CompleteTutorial()
     {
         yield return new WaitForSeconds(3f);
         tutorialPanel.SetActive(false);
         tutorialCompleted = true;
     }
 
-    void Update()
+    private void ResetUI()
     {
-      
+        adKeysPanel?.SetActive(false);
+        mouseKeysPanel?.SetActive(false);
+        shiftKeyImage?.gameObject.SetActive(false);
+        spaceKeyImage?.gameObject.SetActive(false);
+    }
+
+    private void ResetTutorialState()
+    {
+        step = 0;
+        tutorialCompleted = false;
+
+        foreach (var key in new List<KeyCode>(moveKeysPressed.Keys))
+        {
+            moveKeysPressed[key] = false;
+        }
+
+        foreach (var click in new List<int>(mouseClicksPressed.Keys))
+        {
+            mouseClicksPressed[click] = false;
+        }
+    }
+
+    private void Update()
+    {
+        if (!canvasInitialized || tutorialCompleted) return;
 
         switch (step)
         {
             case 0:
-                CheckKeysPressed(new List<KeyCode> { KeyCode.A, KeyCode.D, KeyCode.LeftArrow, KeyCode.RightArrow }, moveKeysPressed, () => {
-                    step++;
-                    ShowNextStep();
-                });
+                CheckMovementKeys();
                 break;
             case 1:
-                if (Input.GetKeyDown(KeyCode.Space))
-                {
-                    step++;
-                    ShowNextStep();
-                }
+                CheckSpaceKey();
                 break;
             case 2:
-                if (Input.GetKeyDown(KeyCode.LeftShift))
-                {
-                    step++;
-                    ShowNextStep();
-                }
+                CheckShiftKey();
                 break;
             case 3:
-                CheckMouseClicks(new List<int> { 0, 1 }, mouseClicksPressed, () => {
-                    step++;
-                    ShowNextStep();
-                });
+                CheckMouseClicks();
                 break;
         }
     }
 
-    private void CheckKeysPressed(List<KeyCode> keys, Dictionary<KeyCode, bool> keyStatus, System.Action onComplete)
+    private void CheckMovementKeys()
     {
-        foreach (var key in keys)
+        foreach (var key in new List<KeyCode>(moveKeysPressed.Keys))
         {
             if (Input.GetKeyDown(key))
-                keyStatus[key] = true;
+            {
+                moveKeysPressed[key] = true;
+            }
         }
 
-        if (keyStatus[KeyCode.A] && keyStatus[KeyCode.D] || keyStatus[KeyCode.LeftArrow] && keyStatus[KeyCode.RightArrow])
+        if ((moveKeysPressed[KeyCode.A] && moveKeysPressed[KeyCode.D]) ||
+            (moveKeysPressed[KeyCode.LeftArrow] && moveKeysPressed[KeyCode.RightArrow]))
         {
-            ResetKeyPresses(keyStatus);
-            onComplete.Invoke();
+            step++;
+            ShowNextStep();
         }
     }
 
-    private void CheckMouseClicks(List<int> buttons, Dictionary<int, bool> clickStatus, System.Action onComplete)
+    private void CheckSpaceKey()
     {
-        foreach (var button in buttons)
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            step++;
+            ShowNextStep();
+        }
+    }
+
+    private void CheckShiftKey()
+    {
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            step++;
+            ShowNextStep();
+        }
+    }
+
+    private void CheckMouseClicks()
+    {
+        foreach (var button in new List<int>(mouseClicksPressed.Keys))
         {
             if (Input.GetMouseButtonDown(button))
-                clickStatus[button] = true;
+            {
+                mouseClicksPressed[button] = true;
+            }
         }
 
-        if (clickStatus[0] && clickStatus[1])
+        if (mouseClicksPressed[0] && mouseClicksPressed[1])
         {
-            ResetKeyPresses(clickStatus);
-            onComplete.Invoke();
+            step++;
+            ShowNextStep();
         }
     }
 
-    private void ResetKeyPresses<T>(Dictionary<T, bool> statusDictionary)
+    private bool IsInTutorialScene()
     {
-        var keys = new List<T>(statusDictionary.Keys);
-        foreach (var key in keys)
-        {
-            statusDictionary[key] = false;
-        }
+        return UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "Tutorial";
     }
 
-    private void ResetUI()
+    private void DisableTutorialPanel()
     {
-        adKeysPanel.SetActive(false);
-        mouseKeysPanel.SetActive(false);
-        shiftKeyImage.gameObject.SetActive(false);
-        spaceKeyImage.gameObject.SetActive(false);
+        tutorialPanel?.SetActive(false);
+    }
+
+    private void OnCinematicFinished(PlayableDirector director)
+    {
+        if (director == entradaDirector)
+        {
+            entradaDirector.stopped -= OnCinematicFinished; // Desuscribir evento
+            StartTutorial();
+        }
     }
 }

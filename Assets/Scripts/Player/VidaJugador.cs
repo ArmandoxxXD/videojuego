@@ -7,16 +7,38 @@ using System;
 public class VidaJugador : MonoBehaviour
 {
     public int vidaActual;
-    public int vidaMaxima;
+    public int vidaMaxima = 5;
     public UnityEvent<int> cambioVida;
     private Animator m_animator;
     public event EventHandler MuerteJugador;
 
+    private GameObject menuGameOverPanel;
+
     void Start()
     {
         m_animator = GetComponent<Animator>();
-        vidaActual = vidaMaxima;
+        vidaActual = GameDataManager.Instance.health;
+        Debug.Log($"Vida inicializada desde la base de datos: {vidaActual}");
         cambioVida.Invoke(vidaActual);
+
+        GameObject canvasInstance = FindObjectOfType<PersistCanvas>()?.gameObject;
+        if (canvasInstance != null)
+        {
+            menuGameOverPanel = canvasInstance.transform.Find("MenuGameOver")?.gameObject;
+
+            if (menuGameOverPanel == null)
+            {
+                Debug.LogError("No se encontró el panel MenuGameOver en el Canvas.");
+            }
+            else
+            {
+                menuGameOverPanel.SetActive(false); // Asegurarse de que esté desactivado al inicio
+            }
+        }
+        else
+        {
+            Debug.LogError("Canvas persistente no encontrado. Asegúrate de que exista en la escena.");
+        }
     }
 
 
@@ -33,6 +55,7 @@ public class VidaJugador : MonoBehaviour
         }
 
         cambioVida.Invoke(vidaActual);
+        GameDataManager.Instance.health = vidaActual;
 
         if (vidaActual <= 0)
         {
@@ -56,11 +79,22 @@ public class VidaJugador : MonoBehaviour
         }
 
         cambioVida.Invoke(vidaActual);
+        GameDataManager.Instance.health = vidaActual;
     }
 
     private IEnumerator MorirYDestruir()
     {
         yield return new WaitForSeconds(m_animator.GetCurrentAnimatorStateInfo(0).length);
+        // Mostrar el panel de Game Over
+        if (menuGameOverPanel != null)
+        {
+            menuGameOverPanel.SetActive(true);
+        }
+        else
+        {
+            Debug.LogError("No se puede mostrar el panel Game Over porque no está configurado.");
+        }
+
         Destroy(gameObject);
     }
 

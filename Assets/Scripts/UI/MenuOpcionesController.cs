@@ -21,7 +21,6 @@ public class MenuOpcionesController : MonoBehaviour
         if (menuInicial != null)
         {
             // Desactivamos el menú de opciones y activamos el menú principal
-            OptionsManager.Instance?.SaveOptions();
             gameObject.SetActive(false);
             menuInicial.SetActive(true);
         }

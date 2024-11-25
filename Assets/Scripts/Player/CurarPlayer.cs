@@ -11,7 +11,7 @@ public class CurarPlayer : MonoBehaviour
         if(other.TryGetComponent(out VidaJugador vidaJugador))
         {
             vidaJugador.CurarVida(curacion);
+            Destroy(gameObject);
         }
-        Destroy(gameObject);
     }
 }
