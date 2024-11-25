@@ -11,7 +11,8 @@ public class MenuInicial : MonoBehaviour
     [SerializeField] private GameObject partidaButtonPrefab;
     [SerializeField] private TextMeshProUGUI mensajeSinPartidas;
 
-    private const string apiUrl = "http://localhost:3000";
+    //private const string apiUrl = "http://localhost:3000";
+    private const string apiUrl = "https://back-end-videojuego.onrender.com";
 
     public void Jugar()
     {

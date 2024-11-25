@@ -13,7 +13,8 @@ public class GameDataManager : MonoBehaviour
     public int health;
     public string currentScene;
 
-    private const string apiUrl = "http://localhost:3000";
+    //private const string apiUrl = "http://localhost:3000";
+    private const string apiUrl = "https://back-end-videojuego.onrender.com";
 
     private void Start()
     {
