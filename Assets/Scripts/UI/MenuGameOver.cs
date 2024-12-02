@@ -9,7 +9,8 @@ public class MenuGameOver : MonoBehaviour
     [SerializeField] private GameObject menuGameOver;
     private VidaJugador vidaJugador;
 
-    private const string apiUrl = "http://localhost:3000";
+    //private const string apiUrl = "http://localhost:3000";
+    private const string apiUrl = "https://back-end-videojuego.onrender.com";
 
     private void Start()
     {

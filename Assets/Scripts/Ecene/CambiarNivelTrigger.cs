@@ -12,8 +12,24 @@ public class CambiarNivelTrigger : MonoBehaviour
     public TutorialManager tutorialManager; // Referencia al TutorialManager
     private GameObject instructionTextObject; // Objeto del texto
     private TextMeshPro instructionText; // Componente TextMeshPro para el texto
+    private EntradasMovimiento entradasMovimiento;
 
     private bool isPlayerNear = false;
+
+    private void Awake()
+    {
+        entradasMovimiento = new EntradasMovimiento();
+    }
+
+    private void OnEnable()
+    {
+        entradasMovimiento.Enable();
+    }
+
+    private void OnDisable()
+    {
+        entradasMovimiento.Disable();
+    }
 
     void Start()
     {
@@ -48,8 +64,8 @@ public class CambiarNivelTrigger : MonoBehaviour
             {
                 if (tutorialManager != null && tutorialManager.tutorialCompleted)
                 {
-                    MostrarTexto("Presiona 'E'\npara avanzar de nivel");
-                    if (Input.GetKeyDown(KeyCode.E))
+                    MostrarTexto("Activa escudo\npara avanzar de nivel");
+                    if (entradasMovimiento.Movimiento.Shell.triggered)
                     {
                         CambiarNivel();
                     }
@@ -63,8 +79,8 @@ public class CambiarNivelTrigger : MonoBehaviour
             {
                 if (GameDataManager.Instance.score >= 5)
                 {
-                    MostrarTexto("Presiona 'E'\npara avanzar al Nivel 2");
-                    if (Input.GetKeyDown(KeyCode.E))
+                    MostrarTexto("Activa escudo\npara avanzar al Nivel 2");
+                    if (entradasMovimiento.Movimiento.Shell.triggered)
                     {
                         CambiarNivel();
                     }
@@ -78,8 +94,8 @@ public class CambiarNivelTrigger : MonoBehaviour
             {
                 if (GameDataManager.Instance.score >= 10)
                 {
-                    MostrarTexto("Presiona 'E'\npara avanzar al Nivel 3");
-                    if (Input.GetKeyDown(KeyCode.E))
+                    MostrarTexto("Activa escudo\npara avanzar al Nivel 3");
+                    if (entradasMovimiento.Movimiento.Shell.triggered)
                     {
                         CambiarNivel();
                     }
@@ -93,8 +109,8 @@ public class CambiarNivelTrigger : MonoBehaviour
             {
                 if (GameDataManager.Instance.score >= 15)
                 {
-                    MostrarTexto("Presiona 'E'\npara terminar el juego");
-                    if (Input.GetKeyDown(KeyCode.E))
+                    MostrarTexto("Activa escudo\npara terminar el juego");
+                    if (entradasMovimiento.Movimiento.Shell.triggered)
                     {
                         CambiarNivel();
                     }

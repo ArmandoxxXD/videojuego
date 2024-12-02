@@ -2,9 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Cinemachine;
-using UnityEngine.Playables; // Para manejar la animación
+using UnityEngine.Playables;
 using System.Collections;
-using System.Collections.Generic;
 
 public class TutorialManager : MonoBehaviour
 {
@@ -15,6 +14,8 @@ public class TutorialManager : MonoBehaviour
     private GameObject mouseKeysPanel;
     private Image shiftKeyImage;
     private Image spaceKeyImage;
+    private Image junpKeyImageMovil;
+    private Image dashKeyImageMovil;
 
     public CinemachineVirtualCamera cinematicCamera;
     public CinemachineVirtualCamera playerCamera;
@@ -25,20 +26,23 @@ public class TutorialManager : MonoBehaviour
 
     private bool canvasInitialized = false;
 
-    // Diccionarios para rastrear el estado de teclas y clics
-    private Dictionary<KeyCode, bool> moveKeysPressed = new Dictionary<KeyCode, bool>
-    {
-        { KeyCode.A, false },
-        { KeyCode.D, false },
-        { KeyCode.LeftArrow, false },
-        { KeyCode.RightArrow, false }
-    };
+    // Sistema de entradas
+    private EntradasMovimiento entradasMovimiento;
 
-    private Dictionary<int, bool> mouseClicksPressed = new Dictionary<int, bool>
+    private void Awake()
     {
-        { 0, false },  // Clic izquierdo
-        { 1, false }   // Clic derecho
-    };
+        entradasMovimiento = new EntradasMovimiento();
+    }
+
+    private void OnEnable()
+    {
+        entradasMovimiento.Enable();
+    }
+
+    private void OnDisable()
+    {
+        entradasMovimiento.Disable();
+    }
 
     private void Start()
     {
@@ -82,6 +86,8 @@ public class TutorialManager : MonoBehaviour
         mouseKeysPanel = canvas.transform.Find("tutorialPanel/mouseKeysPanel")?.gameObject;
         shiftKeyImage = canvas.transform.Find("tutorialPanel/shiftKeyImage")?.GetComponent<Image>();
         spaceKeyImage = canvas.transform.Find("tutorialPanel/spaceKeyImage")?.GetComponent<Image>();
+        junpKeyImageMovil = canvas.transform.Find("tutorialPanel/JunpKeyImageMovil")?.GetComponent<Image>();
+        dashKeyImageMovil = canvas.transform.Find("tutorialPanel/DashKeyImageMovil")?.GetComponent<Image>();
 
         if (tutorialPanel == null || tutorialText == null)
         {
@@ -111,24 +117,38 @@ public class TutorialManager : MonoBehaviour
         switch (step)
         {
             case 0:
-                tutorialText.text = "Usa las teclas AD o las flechas para moverte";
+                tutorialText.text = IsPC()
+                    ? "Usa las teclas AD o las flechas para moverte"
+                    : "Usa los botones de movimiento en pantalla";
                 ResetUI();
-                adKeysPanel?.SetActive(true);
+                adKeysPanel?.SetActive(IsPC());
                 break;
             case 1:
-                tutorialText.text = "Presiona SPACE para saltar";
+                tutorialText.text = IsPC()
+                    ? "Presiona SPACE para saltar"
+                    : "Presiona el botón de salto en la pantalla";
                 ResetUI();
-                spaceKeyImage?.gameObject.SetActive(true);
+                if (IsPC())
+                    spaceKeyImage?.gameObject.SetActive(true);
+                else
+                    junpKeyImageMovil?.gameObject.SetActive(true);
                 break;
             case 2:
-                tutorialText.text = "Presiona SHIFT para hacer un dash.\nPodrás pasar por lugares estrechos.";
+                tutorialText.text = IsPC()
+                    ? "Presiona SHIFT para hacer un dash.\nPodrás pasar por lugares estrechos."
+                    : "Presiona el botón de dash en la pantalla";
                 ResetUI();
-                shiftKeyImage?.gameObject.SetActive(true);
+                if (IsPC())
+                    shiftKeyImage?.gameObject.SetActive(true);
+                else
+                    dashKeyImageMovil?.gameObject.SetActive(true);
                 break;
             case 3:
-                tutorialText.text = "Presiona clic izquierdo para atacar y clic derecho para bloquear";
+                tutorialText.text = IsPC()
+                    ? "Presiona clic izquierdo para atacar y clic derecho para bloquear"
+                    : "Usa los botones de ataque y bloqueo en la pantalla";
                 ResetUI();
-                mouseKeysPanel?.SetActive(true);
+                mouseKeysPanel?.SetActive(IsPC());
                 break;
             case 4:
                 StartCoroutine(PlayCinematicAndProceed());
@@ -173,22 +193,14 @@ public class TutorialManager : MonoBehaviour
         mouseKeysPanel?.SetActive(false);
         shiftKeyImage?.gameObject.SetActive(false);
         spaceKeyImage?.gameObject.SetActive(false);
+        junpKeyImageMovil?.gameObject.SetActive(false);
+        dashKeyImageMovil?.gameObject.SetActive(false);
     }
 
     private void ResetTutorialState()
     {
         step = 0;
         tutorialCompleted = false;
-
-        foreach (var key in new List<KeyCode>(moveKeysPressed.Keys))
-        {
-            moveKeysPressed[key] = false;
-        }
-
-        foreach (var click in new List<int>(mouseClicksPressed.Keys))
-        {
-            mouseClicksPressed[click] = false;
-        }
     }
 
     private void Update()
@@ -198,71 +210,63 @@ public class TutorialManager : MonoBehaviour
         switch (step)
         {
             case 0:
-                CheckMovementKeys();
+                CheckMovement();
                 break;
             case 1:
-                CheckSpaceKey();
+                CheckJump();
                 break;
             case 2:
-                CheckShiftKey();
+                CheckDash();
                 break;
             case 3:
-                CheckMouseClicks();
+                CheckActions();
                 break;
         }
     }
 
-    private void CheckMovementKeys()
+    private void CheckMovement()
     {
-        foreach (var key in new List<KeyCode>(moveKeysPressed.Keys))
-        {
-            if (Input.GetKeyDown(key))
-            {
-                moveKeysPressed[key] = true;
-            }
-        }
-
-        if ((moveKeysPressed[KeyCode.A] && moveKeysPressed[KeyCode.D]) ||
-            (moveKeysPressed[KeyCode.LeftArrow] && moveKeysPressed[KeyCode.RightArrow]))
+        if (entradasMovimiento.Movimiento.Horizontal.ReadValue<float>() != 0)
         {
             step++;
             ShowNextStep();
         }
     }
 
-    private void CheckSpaceKey()
+    private void CheckJump()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (entradasMovimiento.Movimiento.Salto.triggered)
         {
             step++;
             ShowNextStep();
         }
     }
 
-    private void CheckShiftKey()
+    private void CheckDash()
     {
-        if (Input.GetKeyDown(KeyCode.LeftShift))
+        if (entradasMovimiento.Movimiento.Dash.triggered)
         {
             step++;
             ShowNextStep();
         }
     }
 
-    private void CheckMouseClicks()
+    private void CheckActions()
     {
-        foreach (var button in new List<int>(mouseClicksPressed.Keys))
-        {
-            if (Input.GetMouseButtonDown(button))
-            {
-                mouseClicksPressed[button] = true;
-            }
-        }
-
-        if (mouseClicksPressed[0] && mouseClicksPressed[1])
+        if (entradasMovimiento.Movimiento.Atack.triggered || entradasMovimiento.Movimiento.Shell.triggered)
         {
             step++;
             ShowNextStep();
         }
+    }
+
+    private bool IsPC()
+    {
+        return Application.platform == RuntimePlatform.WindowsPlayer ||
+               Application.platform == RuntimePlatform.OSXPlayer ||
+               Application.platform == RuntimePlatform.LinuxPlayer ||
+               Application.platform == RuntimePlatform.WindowsEditor ||
+               Application.platform == RuntimePlatform.OSXEditor;
     }
 
     private bool IsInTutorialScene()

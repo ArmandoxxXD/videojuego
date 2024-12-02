@@ -23,4 +23,5 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Ganador.unity
     guid: a684e2b13deb5c84185c2f4352dd8209
-  m_configObjects: {}
+  m_configObjects:
+    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: efa0704a4067edc47b5065b40bd96093, type: 3}
