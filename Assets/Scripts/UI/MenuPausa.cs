@@ -19,19 +19,6 @@ public class MenuPausa : MonoBehaviour
         Time.timeScale = 0;
     }
 
-    public void Reiniciar()
-    {
-        foreach (GameObject obj in FindObjectsOfType<GameObject>())
-        {
-            if (obj.CompareTag("TutorialTrigger")) // Asegúrate de asignar este tag a tus triggers
-            {
-                obj.SetActive(true);
-            }
-        }
-        Time.timeScale = 1;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-    }
-
     public void Reanudar()
     {
         menuPausa.SetActive(false);
@@ -55,6 +42,6 @@ public class MenuPausa : MonoBehaviour
     {
         Time.timeScale = 0;
         menuPausa.SetActive(true);
-        OptionsManager.Instance?.SaveOptions();
+       
     }
 }

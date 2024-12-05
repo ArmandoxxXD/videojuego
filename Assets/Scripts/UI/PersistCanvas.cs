@@ -5,7 +5,7 @@ public class PersistCanvas : MonoBehaviour
 {
     private static PersistCanvas instance;
 
-    // Lista de escenas donde quieres mostrar el Canvas
+    // Lista de escenas donde mostrar el Canvas
     public string[] scenesToShowCanvas;
 
     void Awake()
@@ -14,7 +14,8 @@ public class PersistCanvas : MonoBehaviour
         {
             instance = this;
             DontDestroyOnLoad(gameObject);
-            SceneManager.sceneLoaded += OnSceneLoaded; // Suscribirse al evento de carga de escena
+            instance = this;
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
         else
         {
@@ -24,7 +25,7 @@ public class PersistCanvas : MonoBehaviour
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        // Verifica si el nombre de la escena está en la lista de escenas donde mostrar el Canvas
+        // Activar o desactivar el Canvas según la escena
         bool showCanvas = false;
         foreach (string sceneName in scenesToShowCanvas)
         {
@@ -35,11 +36,27 @@ public class PersistCanvas : MonoBehaviour
             }
         }
 
-        gameObject.SetActive(showCanvas); // Activa o desactiva el Canvas según la escena
+        gameObject.SetActive(showCanvas);
+
+        // Notificar que el Canvas está listo
+        if (showCanvas)
+        {
+            CanvasReady();
+        }
+    }
+
+    void CanvasReady()
+    {
+        Debug.Log("Canvas listo para el TutorialManager.");
+        TutorialManager tutorialManager = FindObjectOfType<TutorialManager>();
+        if (tutorialManager != null)
+        {
+            tutorialManager.InitializeCanvasReferences(gameObject);
+        }
     }
 
     void OnDestroy()
     {
-        SceneManager.sceneLoaded -= OnSceneLoaded; // Evitar fugas de memoria
+        SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 }

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class HeroKnight : MonoBehaviour
 {
@@ -15,7 +16,7 @@ public class HeroKnight : MonoBehaviour
     [SerializeField] private float tiempoParpadeo = 1.5f;
 
     private Vector2 colliderOriginalSize;
-    private Vector2 colliderOriginalOffset; 
+    private Vector2 colliderOriginalOffset;
 
     private Animator m_animator;
     private Rigidbody2D m_body2d;
@@ -24,11 +25,28 @@ public class HeroKnight : MonoBehaviour
     private Sensor_HeroKnight m_wallSensorR1, m_wallSensorR2, m_wallSensorL1, m_wallSensorL2;
     private VidaJugador vidaJugador;
     private BoxCollider2D playerCollider;
+    private EntradasMovimiento entradasMovimiento;
+
     private bool m_isWallSliding = false, m_grounded = false, m_rolling = false, isBlocking = false, isDead = false, facingRight = true, invulnerable = false, canWallJump = true;
     public bool IsWallSliding => m_isWallSliding;
     private float m_timeSinceAttack = 0.0f, m_delayToIdle = 0.0f, m_rollCurrentTime = 0.0f;
     private int m_currentAttack = 0;
     private readonly float m_rollDuration = 8.0f / 14.0f;
+
+    private void Awake()
+    {
+        entradasMovimiento = new EntradasMovimiento();
+    }
+
+    private void OnEnable()
+    {
+        entradasMovimiento.Enable();
+    }
+
+    private void OnDisable()
+    {
+        entradasMovimiento.Disable();
+    }
 
     void Start()
     {
@@ -58,7 +76,7 @@ public class HeroKnight : MonoBehaviour
 
             HandleGroundAndWallSensors();
             HandleInput();
-         }
+        }
     }
 
     private void HandleGroundAndWallSensors()
@@ -91,7 +109,7 @@ public class HeroKnight : MonoBehaviour
 
     private void HandleInput()
     {
-        float inputX = Input.GetAxis("Horizontal");
+        float inputX = entradasMovimiento.Movimiento.Horizontal.ReadValue<float>();
 
         if ((inputX > 0 && !facingRight) || (inputX < 0 && facingRight))
             Flip();
@@ -101,7 +119,7 @@ public class HeroKnight : MonoBehaviour
 
         m_animator.SetFloat("AirSpeedY", m_body2d.velocity.y);
 
-        if (m_isWallSliding && Input.GetKeyDown("space") && canWallJump)
+        if (m_isWallSliding && entradasMovimiento.Movimiento.Salto.triggered && canWallJump)
         {
             m_body2d.velocity = new Vector2(-m_facingDirection() * m_jumpForce, m_jumpForce);
             m_isWallSliding = false;
@@ -109,7 +127,7 @@ public class HeroKnight : MonoBehaviour
             canWallJump = false;
             StartCoroutine(JumpCooldown());
         }
-        else if (Input.GetKeyDown("space") && m_grounded && !m_rolling)
+        else if (entradasMovimiento.Movimiento.Salto.triggered && m_grounded && !m_rolling)
         {
             m_animator.SetTrigger("Jump");
             m_grounded = false;
@@ -123,13 +141,13 @@ public class HeroKnight : MonoBehaviour
 
     private void HandleActions(float inputX)
     {
-        if (Input.GetMouseButtonDown(0) && m_timeSinceAttack > 0.25f && !m_rolling)
+        if (entradasMovimiento.Movimiento.Atack.triggered && m_timeSinceAttack > 0.25f && !m_rolling)
             Attack();
-        else if (Input.GetMouseButtonDown(1) && !isBlocking)
+        else if (entradasMovimiento.Movimiento.Shell.triggered && !isBlocking)
             Block();
-        else if (Input.GetMouseButtonUp(1) && isBlocking)
+        else if (entradasMovimiento.Movimiento.Shell.triggered && isBlocking)
             isBlocking = false;
-        else if (Input.GetKeyDown("left shift") && !m_isWallSliding)
+        else if (entradasMovimiento.Movimiento.Dash.triggered && !m_isWallSliding)
             Roll();
         else if (Mathf.Abs(inputX) > Mathf.Epsilon)
             m_animator.SetInteger("AnimState", 1); // Animación de caminar
@@ -173,7 +191,7 @@ public class HeroKnight : MonoBehaviour
     }
 
     private IEnumerator RestoreColliderAfterDash()
-    {
+    { 
         yield return new WaitForSeconds(m_rollDuration); // Esperar la duración del dash
 
         // Restaurar el tamaño original del collider
@@ -233,7 +251,7 @@ public class HeroKnight : MonoBehaviour
             GetComponent<VidaJugador>().TomarDaño(daño);
             if (vidaJugador.vidaActual <= 0)
             {
-                isDead = true; 
+                isDead = true;
             }
             m_animator.SetTrigger("Hurt");
             StartCoroutine(ParpadearYHacerInvulnerable());
